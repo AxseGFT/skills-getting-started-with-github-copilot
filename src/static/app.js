@@ -20,11 +20,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
+        const participantsList = details.participants
+          .map((participant) => `
+            <li>
+              ${participant}
+              <button class="delete-participant" data-activity="${name}" data-email="${participant}">❌</button>
+            </li>
+          `)
+          .join("");
+
         activityCard.innerHTML = `
           <h4>${name}</h4>
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <div class="participants">
+            <p><strong>Participants:</strong></p>
+            <ul>${participantsList || "<li>No participants yet</li>"}</ul>
+          </div>
         `;
 
         activitiesList.appendChild(activityCard);
@@ -83,4 +96,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Initialize app
   fetchActivities();
+
+  // Event listener for deleting participants
+  document.addEventListener("click", async (event) => {
+    if (event.target.classList.contains("delete-participant")) {
+      const button = event.target;
+      const activity = button.getAttribute("data-activity");
+      const email = button.getAttribute("data-email");
+
+      try {
+        const response = await fetch(
+          `/activities/${encodeURIComponent(activity)}/unregister?email=${encodeURIComponent(email)}`,
+          {
+            method: "DELETE",
+          }
+        );
+
+        if (response.ok) {
+          alert(`${email} has been unregistered from ${activity}`);
+          fetchActivities(); // Refresh the activities list
+        } else {
+          const result = await response.json();
+          alert(result.detail || "Failed to unregister participant.");
+        }
+      } catch (error) {
+        console.error("Error unregistering participant:", error);
+        alert("An error occurred. Please try again.");
+      }
+    }
+  });
 });
