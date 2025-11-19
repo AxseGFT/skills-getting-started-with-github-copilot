@@ -21,7 +21,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const spotsLeft = details.max_participants - details.participants.length;
 
         const participantsList = details.participants
-          .map((participant) => `<li>${participant}</li>`)
+          .map((participant) => `
+            <li>
+              ${participant}
+              <button class="delete-participant" data-activity="${name}" data-email="${participant}">❌</button>
+            </li>
+          `)
           .join("");
 
         activityCard.innerHTML = `
@@ -91,4 +96,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Initialize app
   fetchActivities();
+
+  // Event listener for deleting participants
+  document.addEventListener("click", async (event) => {
+    if (event.target.classList.contains("delete-participant")) {
+      const button = event.target;
+      const activity = button.getAttribute("data-activity");
+      const email = button.getAttribute("data-email");
+
+      try {
+        const response = await fetch(
+          `/activities/${encodeURIComponent(activity)}/unregister?email=${encodeURIComponent(email)}`,
+          {
+            method: "DELETE",
+          }
+        );
+
+        if (response.ok) {
+          alert(`${email} has been unregistered from ${activity}`);
+          fetchActivities(); // Refresh the activities list
+        } else {
+          const result = await response.json();
+          alert(result.detail || "Failed to unregister participant.");
+        }
+      } catch (error) {
+        console.error("Error unregistering participant:", error);
+        alert("An error occurred. Please try again.");
+      }
+    }
+  });
 });
